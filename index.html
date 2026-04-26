@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Python Cat: Encryption Master</title>
+    <style>
+        /* الثيم اللوني المريح والأنيق */
+        :root {
+            --bg-dark: #8D6E63;       
+            --bg-light: #FFF8E1;      
+            --bubble-bg: #FFEBCD;     
+            --text-dark: #3E2723;     
+            --primary: #5D4037;       
+            --success: #689F38;       
+            --danger: #D32F2F;        
+            --glass: rgba(93, 64, 55, 0.15); 
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: radial-gradient(circle at center, var(--bg-light), var(--bg-dark));
+            color: var(--text-dark);
+            height: 100dvh; 
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* أزرار التحكم العلوية (SVG Icons) */
+        .top-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .icon-btn {
+            width: 48px;
+            height: 48px;
+            background: var(--glass);
+            border: 2px solid rgba(93, 64, 55, 0.4);
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s;
+            color: var(--text-dark);
+        }
+        .icon-btn:hover { background: rgba(93, 64, 55, 0.3); transform: scale(1.05); }
+        
+        .icon-btn svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--text-dark);
+            stroke-width: 2.5;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* شاشة البداية */
+        #splash-screen {
+            position: absolute;
+            inset: 0;
+            background: var(--bg-light);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* الحاوية الرئيسية للتطبيق */
+        #app-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            position: relative;
+        }
+
+        @media (min-width: 768px) {
+            #app-container {
+                max-width: 450px;
+                height: 90dvh;
+                background: rgba(255, 248, 225, 0.6);
+                backdrop-filter: blur(15px);
+                border: 2px solid rgba(93, 64, 55, 0.2);
+                border-radius: 30px;
+                box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+                margin: auto;
+            }
+        }
+
+        .chat-area {
+            flex: 1; 
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            padding-bottom: 10px;
+            min-height: 0; 
+        }
+
+        /* المربع الحواري */
+        .speech-bubble {
+            background: var(--bubble-bg);
+            color: var(--text-dark);
+            padding: 20px 25px;
+            border-radius: 16px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            line-height: 1.5;
+            text-align: center;
+            position: relative;
+            margin-bottom: 35px;
+            width: 95%;
+            box-shadow: 0 10px 20px rgba(93, 64, 55, 0.2);
+            animation: fadeInDrop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            border: 2px solid rgba(93, 64, 55, 0.2);
+        }
+
+        .speech-bubble::after {
+            content: ''; position: absolute; bottom: -16px; left: 50%;
+            transform: translateX(-50%); border-width: 16px 16px 0;
+            border-style: solid; border-color: var(--bubble-bg) transparent transparent transparent;
+        }
+
+        .code-block {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.8);
+            color: #1976D2;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            margin-top: 10px;
+            border: 1px dashed #1976D2;
+            font-size: 1.15rem;
+            letter-spacing: 1px;
+        }
+
+        /* تكبير القطة لملء الفراغ بشكل أفضل */
+        #cat-img {
+            width: 65vw;         
+            max-width: 280px;    
+            height: auto;
+            filter: drop-shadow(0 15px 20px rgba(62, 39, 35, 0.3));
+            z-index: 10;
+        }
+
+        /* منطقة الأزرار */
+        .controls-area {
+            flex-shrink: 0; 
+            padding-bottom: env(safe-area-inset-bottom, 20px); 
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        button {
+            background: var(--primary);
+            color: var(--bg-light);
+            border: none;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 1.15rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 6px 0px rgba(62, 39, 35, 0.8);
+            transition: transform 0.1s, box-shadow 0.1s, background 0.3s;
+            width: 100%;
+            outline: none;
+        }
+
+        button:active {
+            transform: translateY(6px);
+            box-shadow: 0 0px 0px rgba(62, 39, 35, 0.8);
+        }
+
+        .btn-correct { background: var(--success) !important; box-shadow: 0 6px 0px #33691E !important; }
+        .btn-wrong { background: var(--danger) !important; box-shadow: 0 6px 0px #b71c1c !important; }
+
+        /* الأنيميشن */
+        @keyframes fadeInDrop {
+            0% { opacity: 0; transform: translateY(-20px) scale(0.95); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .idle { animation: float 3s ease-in-out infinite; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px) rotate(-4deg); }
+            40%, 80% { transform: translateX(8px) rotate(4deg); }
+        }
+        .error-anim { animation: shake 0.5s ease; filter: sepia(0.5) hue-rotate(-30deg) saturate(2); }
+        
+        @keyframes pop {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1) translateY(-10px); }
+        }
+        .success-anim { animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+    </style>
+</head>
+<body>
+
+    <div class="top-controls">
+        <div class="icon-btn" id="mute-btn" onclick="toggleMute()" title="Mute/Unmute">
+            <svg id="speaker-icon" viewBox="0 0 24 24">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path id="sound-waves" d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                <line id="mute-line" x1="23" y1="1" x2="1" y2="23" stroke="var(--danger)" style="display: none;"></line>
+            </svg>
+        </div>
+        <div class="icon-btn" onclick="toggleFullScreen()" title="Full Screen">
+            <svg viewBox="0 0 24 24">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+            </svg>
+        </div>
+    </div>
+
+    <div id="splash-screen">
+        <button onclick="initApp()" style="max-width: 300px; padding: 25px; font-size: 1.3rem;">Start the lesson</button>
+    </div>
+
+    <div id="app-container" style="display: none;">
+        <div class="chat-area">
+            <div class="speech-bubble" id="bubble"></div>
+            <img id="cat-img" src="cat1.png" alt="Python Cat" class="idle">
+        </div>
+
+        <div class="controls-area" id="controls"></div>
+    </div>
+
+    <script>
+        const splashScreen = document.getElementById('splash-screen');
+        const appContainer = document.getElementById('app-container');
+        const bubble = document.getElementById('bubble');
+        const controls = document.getElementById('controls');
+        const cat = document.getElementById('cat-img');
+        const soundWaves = document.getElementById('sound-waves');
+        const muteLine = document.getElementById('mute-line');
+
+        let isMuted = false;
+
+        // الشرح العميق والمبسط (Flow محسّن)
+        const steps = [
+            {
+                text: "Hello! I am Python Cat. Let's learn how to turn normal text into secrets!",
+                options: [ { text: "Yes, start!", next: 1 } ]
+            },
+            {
+                text: "Computers talk in Bits: just 0s and 1s.<br>Imagine our message is <b style='color:#1976D2'>0</b>, and our Secret Key is <b style='color:#D32F2F'>1</b>.",
+                options: [ { text: "Message = 0, Key = 1", next: 2 } ]
+            },
+            {
+                text: "To hide the message, we mix it with the Key using the Python XOR tool: ^",
+                options: [ { text: "How does XOR mix them?", next: 3 } ]
+            },
+            {
+                text: "XOR Rule:<br>If bits are SAME, output is 0.<br>If bits are DIFFERENT, output is 1.",
+                options: [ { text: "Got it! Same=0, Different=1", next: 4 } ]
+            },
+            {
+                text: "Mission 1 (Lock): Let's XOR our message (0) with the key (1).<br>What is <b style='color:#1976D2'>0</b> ^ <b style='color:#D32F2F'>1</b> ?",
+                options: [
+                    { text: "1 (Because they are different)", next: 5, isCorrect: true },
+                    { text: "0 (Because they are the same)", next: -1, isCorrect: false }
+                ]
+            },
+            {
+                text: "Correct! The message 0 changed to 1! It is now encrypted and locked. 🔒",
+                options: [ { text: "How do we unlock it?", next: 6 } ]
+            },
+            {
+                text: "Mission 2 (Unlock): Take the locked message (1) and XOR it with the EXACT SAME KEY (1).<br>What is 1 ^ 1 ?",
+                options: [
+                    { text: "0 (Because they are the same)", next: 7, isCorrect: true },
+                    { text: "1 (Because they are different)", next: -2, isCorrect: false }
+                ]
+            },
+            {
+                text: "Boom! We got our original 0 back! 🔓<br>It works with whole words too! Letters become bits, XOR locks them, and XOR unlocks them.",
+                options: [ { text: "Show me the Python code", next: 8 } ]
+            },
+            {
+                text: "Python makes it simple:<br><div class='code-block'>secret = message ^ key</div><br>You are now a certified Encryption Master!",
+                options: [ { text: "Play Again", next: 0 } ]
+            }
+        ];
+
+        let preferredVoice = null;
+        function setBestVoice() {
+            const voices = window.speechSynthesis.getVoices();
+            preferredVoice = voices.find(v => v.name.includes('Google US English')) || 
+                             voices.find(v => v.lang === 'en-US' && v.name.includes('Female')) ||
+                             voices.find(v => v.lang === 'en-US');
+        }
+
+        window.speechSynthesis.onvoiceschanged = setBestVoice;
+
+        function initApp() {
+            splashScreen.style.display = 'none';
+            appContainer.style.display = 'flex';
+            setBestVoice(); 
+            
+            // تهيئة الصوت للمتصفح
+            const initUtterance = new SpeechSynthesisUtterance('');
+            window.speechSynthesis.speak(initUtterance);
+            
+            renderStep(0);
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            if (isMuted) {
+                soundWaves.style.display = 'none';
+                muteLine.style.display = 'block';
+                window.speechSynthesis.cancel();
+            } else {
+                soundWaves.style.display = 'block';
+                muteLine.style.display = 'none';
+                speakText(bubble.innerHTML); // نطق النص الحالي عند تفعيل الصوت
+            }
+        }
+
+        function speakText(htmlText) {
+            if (isMuted) return;
+            
+            window.speechSynthesis.cancel();
+            // تنظيف النص وتوضيح نطق الرموز
+            const cleanText = htmlText.replace(/<[^>]*>?/gm, '') // إزالة أكواد HTML
+                                      .replace(/\^/g, ' XOR ')
+                                      .replace('XOR', 'Ex Or')
+                                      .replace('=', ' equals ');
+                                  
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            
+            if (preferredVoice) utterance.voice = preferredVoice;
+            utterance.lang = 'en-US';
+            utterance.pitch = 1.15; 
+            utterance.rate = 0.95;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function renderStep(index) {
+            const step = steps[index];
+            
+            bubble.innerHTML = step.text;
+            speakText(step.text);
+
+            bubble.style.animation = 'none';
+            void bubble.offsetWidth;
+            bubble.style.animation = 'fadeInDrop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
+
+            controls.innerHTML = '';
+            step.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.innerHTML = opt.text;
+                btn.onclick = () => handleAnswer(opt, btn);
+                controls.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(option, btnElement) {
+            // تعطيل كل الأزرار فوراً لمنع الضغط المزدوج (Double-click bug fix)
+            controls.querySelectorAll('button').forEach(b => b.style.pointerEvents = 'none');
+            
+            cat.className = 'idle'; 
+
+            if (option.next < 0) {
+                btnElement.classList.add('btn-wrong');
+                cat.classList.add('error-anim');
+                speakText("Wait, think again!");
+                
+                setTimeout(() => {
+                    cat.className = 'idle';
+                    btnElement.classList.remove('btn-wrong');
+                    // إعادة تفعيل الأزرار بعد انتهاء التأثير
+                    controls.querySelectorAll('button').forEach(b => b.style.pointerEvents = 'auto');
+                }, 800);
+            } else {
+                if (option.isCorrect) {
+                    btnElement.classList.add('btn-correct');
+                    cat.classList.add('success-anim');
+                    
+                    setTimeout(() => {
+                        cat.className = 'idle';
+                        renderStep(option.next);
+                    }, 1200);
+                } else {
+                    renderStep(option.next);
+                }
+            }
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
+
+
